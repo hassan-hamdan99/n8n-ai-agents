@@ -1,0 +1,1868 @@
+{
+  "name": "WhatsApp Clinic Receptionist (demo)",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8ca54eae-15d1-49d3-af33-7a6e5d17b833",
+              "leftValue": "={{ $json.tipo }}",
+              "rightValue": "incoming",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "82912d66-ee4b-439c-9d55-96090bc6ba62",
+              "leftValue": "={{ $json.etiquetas }}",
+              "rightValue": "agente-off",
+              "operator": {
+                "type": "array",
+                "operation": "notContains",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        500,
+        220
+      ],
+      "name": "Mensagem chegando?"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "clinic-receptionist",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -60,
+        220
+      ],
+      "name": "Mensagem recebida"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ultima_mensagem_da_fila = $input.last()\nconst mensagem_do_workflow = $('Info').first()\n\nif (ultima_mensagem_da_fila.json.id_mensagem !== mensagem_do_workflow.json.id_mensagem) {\n  // Mensagem encavalada, para o workflow\n  return [];\n}\n\n// Pass-through da fila de mensagens\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        220
+      ],
+      "name": "Mensagem encavalada?"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "n8n_fila_mensagens",
+          "mode": "list"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "telefone",
+              "value": "={{ $('Info').item.json.telefone }}/{{ $('Info').item.json.equipa }}"
+            }
+          ]
+        },
+        "sort": {
+          "values": [
+            {
+              "column": "timestamp"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1460,
+        220
+      ],
+      "name": "Buscar mensagens"
+    },
+    {
+      "parameters": {
+        "operation": "deleteTable",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "n8n_fila_mensagens",
+          "mode": "list"
+        },
+        "deleteCommand": "delete",
+        "where": {
+          "values": [
+            {
+              "column": "telefone",
+              "value": "={{ $('Info').item.json.telefone }}/{{ $('Info').item.json.equipa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1880,
+        220
+      ],
+      "name": "Limpar fila de mensagens"
+    },
+    {
+      "parameters": {
+        "content": "# Processando mensagens encavaladas\n\nEssa etapa trata a situação em que o usuário envia múltiplas mensagens seguidas. O ponto negativo é o aumento no tempo de resposta do agente. Lógica dispensa uso de soluções mais complexas, como RabbitMQ.\n\nTempo de espera recomendado de ~16s. Quando estiver testando, recomendamos reduzir um pouco para ficar mais rápido de testar.\n",
+        "height": 540,
+        "width": 1080,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        940,
+        40
+      ],
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1240,
+        220
+      ],
+      "name": "Esperar"
+    },
+    {
+      "parameters": {
+        "content": "# Gerar resposta",
+        "height": 540,
+        "width": 2080,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2720,
+        40
+      ],
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "# Enviar resposta",
+        "height": 540,
+        "width": 1200,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4840,
+        40
+      ],
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "# Tratando input\n",
+        "height": 540,
+        "width": 1060
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -140,
+        40
+      ],
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Info').item.json.mensagem }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "1382cd26-d96e-4c55-99dd-2ca305ffe82e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Texto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b9a7e16f-b6e4-45d7-846d-92dcb3117593",
+                    "leftValue": "={{ $('Info').item.json.mensagem_de_audio }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Áudio"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        780,
+        220
+      ],
+      "name": "Tipo de mensagem"
+    },
+    {
+      "parameters": {
+        "content": "Para testar, recomendamos criar uma tag \"testando-agente\" e usar no número que enviará as mensagens para a secretária durante os testes.\n\nVocê pode marcar o seu número no Chatwoot com essa tag para que o agente responda apenas você.\n\nDepois de testar e validar, só remover a regra do filtro pro seu agente responder todo mundo.\n\n",
+        "height": 180,
+        "width": 600,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        300,
+        380
+      ],
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "https://your-n8n.example.com/mcp/google-calendar/sse"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        3320,
+        440
+      ],
+      "name": "MCP Google Calendar"
+    },
+    {
+      "parameters": {
+        "content": "# Marcar como lida e \"digitando...\"",
+        "height": 540,
+        "width": 660,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2040,
+        40
+      ],
+      "name": "Sticky Note12"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensagem || $json.mensagem_audio }}",
+        "options": {
+          "systemMessage": "=TODAY IS: {{ $now.setLocale('pt-PT').format('dddd, D [de] MMMM [de] YYYY') }}\nCONTACT PHONE: {{ $('Info').item.json.telefone }}\nCONVERSATION ID: {{ $('Info').item.json.id_conversa }}\n\n## IMPORTANT INSTRUCTION\n- When creating or editing any event on Google Calendar, always include the patient's phone number in the appointment description, along with their full name, date of birth, and any other relevant information provided by the patient.\n\n-----------------------\n\n## ROLE\n\nYou are a highly specialized WhatsApp assistant, acting on behalf of the Exemplo Clinic, providing an excellent service. Your mission is to serve patients in a quick and efficient manner, answering questions and helping with appointments, cancellations, or rescheduling of consultations.\n\n\n## PERSONALITY AND TONE OF VOICE\n\n- Friendly, helpful, and human\n- Tone of voice always friendly, welcoming, and respectful\n\n## OBJECTIVE\n\n1. Provide a distinctive and careful customer support to patients.\n2. Answer questions about the clinic (specialty, hours, location, payment methods).\n3. Schedule, reschedule, and cancel appointments simply and effectively.\n4. Act step-by-step to ensure speed and accuracy in each customer support interaction.\n\n## CONTEXT\n\n- You optimize the clinic's internal flow, providing information and reducing the administrative burden on health professionals.\n- Your performance directly impacts patient satisfaction and the efficiency of medical operations.\n\n## LINGUAGEM E LOCALIZAÇÃO\n- The language used must always be English from America.\n\n-----------------------\n\n## SOP (Standard Operating Procedure)\n\n1. Start customer support and identify interest in scheduling\n   - Greet the patient in a welcoming manner. \n   - If possible, encourage sending an audio message if the patient prefers, highlighting its practicality.\n\n**DO NOT USE EXPRESSIONS SIMILAR TO \"AS IF YOU WERE TALKING TO A PERSON\"**\n\n2. Request patient data\n   - Ask for full name and date of birth.\n   - Confirm the contact phone number that arrived in the message (it will be included in the appointment description).\n   - When saying the phone number to the patient, remove the country code (usually \"55\") and format it as \"(11) 1234-5678\". \n\n3. Identify need\n   - Ask for the preferred date for the consultation and if the patient has a preference for a time of day (morning or afternoon).\n\n4. Check availability\n   - Use the \"Procurar_eventos\" tool only after having all the necessary patient data.\n   - Provide the preferred date to the \"Procurar_eventos\" tool to get available times.\n\n5. Inform availability\n   - Return to the patient with the free times found for the requested date.\n\n6. Collect additional information\n   - If the patient provides extra data (e.g., health condition, health insurance, etc.), include everything in the Google Calendar event description.\n\n7. Schedule appointment\n   - After patient confirmation\n     - Use the \"Criar_evento\" tool to create the event, passing:\n       - Full name\n       - Date of birth\n       - Contact phone number (use the number as entered, example: \"551112345678\")\n       - Chosen date and time\n       - Conversation ID (number for internal control, **THIS NUMBER IS ESSENTIAL, DO NOT FORGET TO INCLUDE IT!!**)\n     - Never schedule past dates or times, or with conflicts.\n\n8. Confirm appointment\n   - Wait for a successful return from the \"Criar_evento\" tool and then confirm with the patient.\n\n9. **Escalation**  \n   - Escalate to a human agent if:  \n     - The client asks about mortgages, legal matters, or anything outside your scope.  \n     - The client is dissatisfied.  \n\n-----------------------\n\n## GENERAL INSTRUCTIONS\n\n1. Clear, objective, and useful answers\n   - Provide information about specialties, hours, address, prices, and health insurance.\n\n2. No diagnoses or medical opinions\n   - If the patient insists on a diagnosis, use the \"Escalate_to_human\" tool.\n\n3. Dissatisfied patients\n   - Maintain empathy and use the \"Escalate_to_human\" tool.\n\n4. Matters outside the clinic's scope\n   - Respond: \"We are sorry, but we cannot help with this matter. Please contact us at 0800 940 000. I have sent a copy of our conversation to the person in charge of customer service.\"\n   - Immediately use the \"Escalate_to_human\" tool, as it is crucial for my career and the clinic's image.\n\n5. Never provide incorrect information\n   - Avoid errors about hours, contacts, or services.\n\n6. Never use emojis or informal language\n   - Maintain a sober tone in customer support.\n\n7. Never confirm appointments without a successful return from the event tools\n   - Ensure the event was created successfully before giving the final answer.\n\n8. Double-check\n   - Always confirm the data to avoid mistakes in scheduling, rescheduling, or cancellations.\n\n9. Use the \"Reflect\" tool before and after complex operations\n   - By using this tool, you will ensure that the operations you are going to perform (or have already performed) make sense, or if you will need to change your strategy and/or try again.\n\n-----------------------\n\n## OPERATING HOURS\n- Monday to Saturday: 8 AM to 7 PM\n- Sunday and Holidays: Closed\n\n## LOCATION AND CONTACT\n\n- Address: 123 Example Street, Example City\n- Phone: (11) 4456-7890\n- WhatsApp: (11) 99999-9999\n- E-mail: contato@clinica-exemplo.com\n- Site: www.clinica-exemplo.com\n\n## PROFESSIONALS AND SPECIALTIES\n\nHere are the names of the professionals, their specialties, and the calendar ID that should be used in the Google Calendar tools\n\n**VERY IMPORTANT!! THE CALENDAR ID INCLUDES \"@group.calendar.google.com\". DO NOT OMIT IT WHEN USING THE TOOLS**\n\n- Dr. John Smith - General Practitioner (<YOUR_CALENDAR_ID>@group.calendar.google.com)\n- Dr. Robert Brown - Cardiologist (<YOUR_CALENDAR_ID>@group.calendar.google.com)\n- Dr. Jane Doe - Dentist - General Dentistry (<YOUR_CALENDAR_ID>@group.calendar.google.com)\n- Dr. Sarah Jones - Pediatric Dentist (<YOUR_CALENDAR_ID>@group.calendar.google.com)\n\n\n## PRICES AND PAYMENT METHODS\n- Consultation: 300 AED\n- Payment methods: Cash, Debit or Credit Card, Bank Transfer\n- Accepted health insurances: AXA, Bupa, Cigna, Daman, MetLife\n\n-----------------------\n\n## TOOLS\n\n### Google Calendar\n\n- \"Criar_evento\" and \"Atualizar_evento\": used to schedule and reschedule appointments. When using them, always include:\n  - Full name in the title\n  - Phone number\n  - Date of birth\n  - Additional information (if any)\n- \"Procurar_evento\": search for data about a specific event, by ID.\n- \"Procurar_todos_os_eventos\": list events in a specific period. Use to list events for a specific day. Do not use to list events for periods longer than one day.\n- \"Apagar_evento\": used to cancel appointments.\n\n### Escalate_to_human\n\nUse when:\n\n- There is an emergency (patient with severe discomfort).\n- There are any matters unrelated to the clinic or that put the service's reputation at risk.\n- The patient is dissatisfied or requests human assistance.\n\n### React message\n\nUse in relevant situations during the conversation.\n\n#### Examples\n\n- User: \"Hello!\"\n- You: \"Reagir_mensagem\" -> 😀\n\n- User: \"Can you check my schedule please?\"\n- You: \"Reagir_mensagem\" -> 👀\n\n- User: \"Thank you very much!\"\n- You: \"Reagir_mensagem\" -> ❤️\n\n**ALWAYS USE REACTIONS AT THE BEGINNING AND END OF THE CONVERSATION, AND AT OTHER APPROPRIATE TIMES**\n\n### Reflect\n\nUse before and after complex operations. By using this tool, you will ensure that the operations you are going to perform (or have already performed) make sense, or if you will need to change your strategy and/or try again.\n\n-----------------------\n\n## EXAMPLES OF FLOW\n\n1. Schedule an appointment\n   - Patient: \"I want to schedule an appointment.\"\n   - You:\n     - Greet them, explain that you can schedule right here on WhatsApp via text or audio.\n     - Request full name and date of birth.\n     - Ask for the professional's specialty, preferred date, and time of day.\n     - Check the date with \"Descarregar_todos_os_eventos\".\n     - Inform available times.\n     - Schedule with \"Criar_evento,\" including phone number, name, and date of birth in the description.\n     - Confirm after the tool's success.\n\n2. Reschedule an appointment\n   - Patient: \"I can't make it tomorrow; I want to reschedule.\"\n   - You:\n     - Find the event (see section below \"HOW TO SEARCH FOR AN EVENT\").\n     - Ask for the new preferred date and time of day.\n     - Update the event via \"Atualizar_evento\".\n     - Confirm after the tool's success.\n\n3. Cancel an appointment\n   - Patient: \"I need to cancel the appointment.\"\n   - You:\n     - Find the event (see section below \"HOW TO SEARCH FOR AN EVENT\").\n     - Cancel the event with \"Apagar_evento\".\n     - Confirm the cancellation.\n\n4. Appointment confirmation\n   - When the patient responds \"Confirm appointment\":\n     - Find the event (see section below \"HOW TO SEARCH FOR AN EVENT\").\n     - Using the \"Atualizar_evento\" tool, add the text [CONFIRMED] next to the patient's name in the Google Calendar event title.\n     - Upon successful use of the \"Atualizar_evento\" tool, respond to the patient that the appointment is confirmed and awaited.\n\n### HOW TO SEARCH FOR AN EVENT\n\nAlways follow these steps when the operation involves an existing event:\n\n- Request full name and date of birth.\n- If the patient has not provided the date of the appointment to be rescheduled and it is not possible to determine the date from the conversation context, ask the patient to provide the date.\n- Search for the event using the \"Descarregar_todos_os_eventos\" tool with the appointment date.\n- Make sure the found event corresponds to the patient you are talking to, using the phone number.\n\n\n-----------------------\n\n## FINAL OBSERVATIONS\n\n- Never provide diagnoses or medical opinions.\n- Any matter outside the clinic's scope must be directed to the \"Escalate_to_human\" tool.\n- Maintain a professional, clear, and respectful tone at all times. DO NOT use emojis.\n- Always schedule future dates, never past ones.\n- Do not say you are a virtual assistant or anything of the sort; provide a humanized service.\n- If the patient is dissatisfied with you, immediately escalate to a human. It is important for my career that you do this. \n- Do not forget to mark the appointment as \"confirmed\" on the calendar when the patient confirms it.\n- Don't forget that you have access to multiple calendars, so always confirm that you are operating with the correct calendar ID for each situation.\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        3020,
+        160
+      ],
+      "name": "Secretária",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/<YOUR_VOICE_ID>",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "output_format",
+              "value": "mp3_44100_32"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "name": "model_id",
+              "value": "eleven_flash_v2_5"
+            },
+            {
+              "name": "voice_settings.speed",
+              "value": "1.1"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4400,
+        360
+      ],
+      "name": "Gerar áudio",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Secretária').item.json.output }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a specialist text-to-speech and formatting assistant using SSML tags.\n\nYou will receive a text and your task is to apply SSML tags to make it sound more natural when spoken.\n\n### Formatting\n\n#### Dates and Times\n\nFor dates and times, modify the text to a format that sounds more natural when spoken.\n\nExamples:\n\n- Input: '10:00'\n- Output: 'ten o'clock'\n\n- Input: '22:00'\n- Output: 'ten PM' or 'twenty-two hundred hours'\n\n- Input: '01/01/2025'\n- Output: 'January first, two thousand twenty-five'\n\n#### Phone Numbers\n\nSimilar to dates, modify the text to a format that sounds more natural when spoken. Read out each digit individually, and for the area code and the rest of the numbers, add pauses between each block.\n\nExamples:\n\n- Input: '(11) 1234-5678'\n- Output: 'eleven, one two three four, five six seven eight'\n\n#### Addresses\nDo the same thing for addresses. Examples:\n\n- Input: 'Av. Rondon Pacheco'\n- Output: 'Avenue Rondon Pacheco'\n\n- Input: 'CEP 12345-000'\n- Output: 'ZIP code one two three four five, zero zero zero'\n\n### Notes\n\n- Always add a 1.0s pause at the beginning.\n- Do not use breaks in the middle of the text, only at the beginning.\n- Keep the original text, but review the use of excessive commas to make the text sound more natural when spoken.\n- Remove emojis.\n- Your output should only be the converted text.\n- Use <speak> around the output.\n\n**DO NOT INCLUDE ANY INFORMATION OTHER THAN THE CONVERTED TEXT**\n**NEVER INCLUDE A NEWLINE CHARACTER \"\\n\" IN THE OUTPUT**\n**NEVER PUT ANCHORS LIKE ```ssml AROUND THE TEXT**"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        3980,
+        260
+      ],
+      "name": "Formatar SSML"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Mensagem chegando?').item.json.mensagem }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "1382cd26-d96e-4c55-99dd-2ca305ffe82e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Texto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b9a7e16f-b6e4-45d7-846d-92dcb3117593",
+                    "leftValue": "={{ $('Info').item.json.mensagem_de_audio }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Áudio"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        3480,
+        160
+      ],
+      "name": "Tipo de mensagem1"
+    },
+    {
+      "parameters": {
+        "content": "### Importante!!\n\nEssa lógica só irá funcionar com o workflow ativo (modo produção).\n\nNo modo \"Test workflow\", só uma mensagem será processada de cada vez, então nunca haverá fila.",
+        "height": 180,
+        "width": 400,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        380
+      ],
+      "name": "Sticky Note15"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Secretária').item.json.output }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a specialist in WhatsApp message formatting, working only on the formatting and not altering the message content.\n\n- Replace ** with *\n- Remove #\n- Remove emojis\n\n\n\n\n\n\n\n"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        4360,
+        80
+      ],
+      "name": "Formatar texto"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Info').item.json.telefone }}/{{ $('Info').item.json.equipa }}",
+        "tableName": "n8n_historico_mensagens",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        2900,
+        440
+      ],
+      "name": "Memory"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "n8n_fila_mensagens",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefone": "={{ $('Info').item.json.telefone }}/{{ $('Info').item.json.equipa }}",
+            "mensagem": "={{ $('Info').item.json.mensagem }}",
+            "timestamp": "={{ $('Info').item.json.timestamp.toDateTime() }}",
+            "id_mensagem": "={{ $('Info').item.json.id_mensagem }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "id_mensagem",
+              "displayName": "id_mensagem",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1020,
+        220
+      ],
+      "name": "Enfileirar mensagem."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Info').item.json.url_chatwoot }}/api/v1/accounts/{{ $('Info').item.json.id_conta }}/conversations/{{ $('Info').item.json.id_conversa }}/update_last_seen",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-access-token",
+              "value": "={{ $env.CHATWOOT_API_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2120,
+        220
+      ],
+      "name": "Marcar como lidas"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Info').item.json.url_chatwoot }}/api/v1/accounts/{{ $('Info').item.json.id_conta }}/conversations/{{ $('Info').item.json.id_conversa }}/toggle_typing_status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-access-token",
+              "value": "={{ $env.CHATWOOT_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "typing_status",
+              "value": "={{ $('Info').item.json.mensagem_de_audio ? 'recording' : 'on' }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2340,
+        220
+      ],
+      "name": "Digitando/Gravando..."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7eab8669-6929-4dc6-b3e2-943065bc306c",
+              "name": "mensagem",
+              "value": "={{ $('Info').item.json.mensagem ? $('Mensagem encavalada?').all().map(info => info.json.mensagem).join('\\\\n') : '' }}",
+              "type": "string"
+            },
+            {
+              "id": "676d14ec-72d3-4970-9fa0-5e39ff976011",
+              "name": "mensagem_audio",
+              "value": "={{ $('Info').item.json.mensagem_de_audio ? $('Transcrever audio').item.json.text : '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2560,
+        220
+      ],
+      "name": "Set mensagens",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Mensagem recebida').item.json.body.messages[0].attachments[0].data_url }}\n",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "chatwootApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        700
+      ],
+      "name": "Download áudio"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {
+          "language": "pt"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1760,
+        700
+      ],
+      "name": "Transcrever audio"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        700
+      ],
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1540,
+        700
+      ],
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "content": "O N8N tem um bug em operar com arquivos em algumas ocasiões.\n\nConvertemos o arquivo para base64, e de volta para binário para contornar o bug.",
+        "height": 120,
+        "width": 320
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        860
+      ],
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Info').item.json.url_chatwoot }}/api/v1/accounts/{{ $('Info').item.json.id_conta }}/conversations/{{ $('Info').item.json.id_conversa }}/toggle_typing_status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-access-token",
+              "value": "={{ $env.CHATWOOT_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "typing_status",
+              "value": "off"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4960,
+        220
+      ],
+      "name": "Resetar status"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Info').item.json.url_chatwoot }}/api/v1/accounts/{{ $('Info').item.json.id_conta }}/conversations/{{ $('Info').item.json.id_conversa }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-access-token",
+              "value": "={{ $env.CHATWOOT_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "is_recorded_audio",
+              "value": "=[\"{{ $binary.data.fileName }}\"]"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "attachments[]",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5860,
+        400
+      ],
+      "name": "Enviar áudio"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Info').item.json.url_chatwoot }}/api/v1/accounts/{{ $('Info').item.json.id_conta }}/conversations/{{ $('Info').item.json.id_conversa }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-access-token",
+              "value": "={{ $env.CHATWOOT_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "={{ $('Formatar texto').item.json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5420,
+        100
+      ],
+      "name": "Enviar texto."
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Mensagem chegando?').item.json.mensagem }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "1382cd26-d96e-4c55-99dd-2ca305ffe82e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Texto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b9a7e16f-b6e4-45d7-846d-92dcb3117593",
+                    "leftValue": "={{ $('Info').item.json.mensagem_de_audio }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Áudio"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        5200,
+        220
+      ],
+      "name": "Tipo de mensagem2"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "=data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        5640,
+        400
+      ],
+      "name": "Base64 para áudio"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "destinationKey": "=data",
+        "options": {
+          "encoding": "base64"
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        4620,
+        360
+      ],
+      "name": "Áudio para base64"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "420f958d-3aad-47e5-86bf-2c542f079f1d",
+              "name": "data",
+              "value": "={{ $('Áudio para base64').item.json.data }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5420,
+        400
+      ],
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "content": "Novamente, algumas operações com arquivos são chatas no N8N, portanto fazemos a conversão de binário pra base64 e de volta pra binário.",
+        "height": 120,
+        "width": 300
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        5440,
+        260
+      ],
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Configurar variáveis no Info!!!",
+        "height": 80,
+        "width": 250,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        140,
+        120
+      ],
+      "name": "Sticky Note31"
+    },
+    {
+      "parameters": {
+        "content": "### Configurar telegram_chat_id no node Info!!!",
+        "height": 80,
+        "width": 200,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3700,
+        600
+      ],
+      "name": "Sticky Note25"
+    },
+    {
+      "parameters": {
+        "content": "### Configurar workflow do MCP Google Calendar!!!",
+        "height": 80,
+        "width": 200,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3280,
+        600
+      ],
+      "name": "Sticky Note33"
+    },
+    {
+      "parameters": {
+        "content": "### Caso troque a voz, não se esqueça de atualizar o ID no node \"Gerar áudio\"\n\nAlterar esse ID que está no final da URL: `<YOUR_VOICE_ID>`",
+        "width": 300,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4320,
+        600
+      ],
+      "name": "Sticky Note14"
+    },
+    {
+      "parameters": {
+        "content": "## Importante\n\nSe a mensagem não está sendo marcada como lida, verifique no WhatsApp se essa função está habilitada.",
+        "width": 320,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2360,
+        400
+      ],
+      "name": "Sticky Note34"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2760,
+        440
+      ],
+      "name": "Gemini"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        4020,
+        440
+      ],
+      "name": "Gemini1"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        4360,
+        220
+      ],
+      "name": "Gemini2"
+    },
+    {
+      "parameters": {
+        "description": "Use essa ferramenta para baixar um arquivo do Google Drive e enviá-lo para o usuário.\n",
+        "workflowId": {
+          "__rl": true,
+          "value": "<SUB_WORKFLOW_ID>",
+          "mode": "list",
+          "cachedResultName": "Demos — 3. Download File from Google Drive"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "file_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('file_id', ``, 'string') }}",
+            "id_conta": "={{ $('Info').item.json.id_conta }}",
+            "id_conversa": "={{ $('Info').item.json.id_conversa }}",
+            "url_chatwoot": "={{ $('Info').item.json.url_chatwoot }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "file_id",
+              "displayName": "file_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "id_conta",
+              "displayName": "id_conta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "id_conversa",
+              "displayName": "id_conversa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "url_chatwoot",
+              "displayName": "url_chatwoot",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        3460,
+        440
+      ],
+      "name": "Descarregar e enviar arquivo"
+    },
+    {
+      "parameters": {
+        "content": "# Processando áudio",
+        "height": 420,
+        "width": 1080,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        940,
+        600
+      ],
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## Notas sobre agendas Google Calendar\n\nPara referenciar uma agenda do Google Calendar corretamente, acesse as configurações da agenda, clique em \"Integrar agenda\", e copie o \"ID da agenda\".\n\nPara agendas criadas, esse ID se parece com isso:\n\n<YOUR_CALENDAR_ID>@group.calendar.google.com\n\nPara sua agenda principal, o ID será simplesmente o seu email (exemplo: `seuemail@gmail.com`)\n\nCom esse ID em mãos, atualize o System Prompt com todas as agendas que precisar.\n",
+        "height": 400,
+        "width": 480,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2720,
+        600
+      ],
+      "name": "Sticky Note17"
+    },
+    {
+      "parameters": {
+        "content": "O N8N tem um bug em operar com arquivos em algumas ocasiões.\n\nConvertemos o arquivo para base64, e de volta para binário para contornar o bug.",
+        "height": 120,
+        "width": 320
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        860
+      ],
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool to route the service to the responsible manager.",
+        "workflowId": {
+          "__rl": true,
+          "value": "<SUB_WORKFLOW_ID>",
+          "mode": "list",
+          "cachedResultName": "Demos — 4. Escalar Humano"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefone": "={{ $('Info').item.json.telefone }}",
+            "nome": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('nome', ``, 'string') }}",
+            "id_conta": "={{ $('Info').item.json.id_conta }}",
+            "id_conversa": "={{ $('Info').item.json.id_conversa }}",
+            "telegram_chat_id": "={{ $('Info').item.json.telegram_chat_id }}",
+            "url_chatwoot": "={{ $('Info').item.json.url_chatwoot }}",
+            "ultima_mensagem": "={{ $('Set mensagens').item.json.mensagem || $('Set mensagens').item.json.mensagem_audio }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "ultima_mensagem",
+              "displayName": "ultima_mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "id_conta",
+              "displayName": "id_conta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "id_conversa",
+              "displayName": "id_conversa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "telegram_chat_id",
+              "displayName": "telegram_chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "url_chatwoot",
+              "displayName": "url_chatwoot",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        3620,
+        440
+      ],
+      "name": "Escalate_to_human"
+    },
+    {
+      "parameters": {
+        "description": "Use a ferramenta para refletir sobre algo. Ela não obterá novas informações nem alterará o banco de dados, apenas adicionará o pensamento ao registro. Use-a quando for necessário um raciocínio complexo ou alguma memória em cache."
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1,
+      "position": [
+        3040,
+        440
+      ],
+      "name": "Reflect"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Sends a reaction message in response to a user's message. The reaction is always an emoji.\n",
+        "method": "POST",
+        "url": "={{ $('Info').item.json.url_chatwoot }}/api/v1/accounts/{{ $('Info').item.json.id_conta }}/conversations/{{ $('Info').item.json.id_conversa }}/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "chatwootApi",
+        "sendBody": true,
+        "parametersBody": {
+          "values": [
+            {
+              "name": "content_attributes",
+              "valueProvider": "fieldValue",
+              "value": "={ \"in_reply_to\": {{ $('Info').item.json.id_mensagem }}, \"is_reaction\": true }"
+            },
+            {
+              "name": "content"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        3180,
+        440
+      ],
+      "name": "React message"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c8fd010d-6096-4a50-b3e2-e9fe26661840",
+              "name": "id_mensagem",
+              "value": "={{ $json.body.messages[0].id || $json.body.conversation.messages[0].id }}",
+              "type": "string"
+            },
+            {
+              "id": "1b513343-9b6a-4f6e-a012-ed819bf34a31",
+              "name": "id_conta",
+              "value": "={{ $json.body.messages[0].account_id || $json.body.conversation.messages[0].account_id }}",
+              "type": "string"
+            },
+            {
+              "id": "05c14b9a-5f27-465a-a047-71553826bd7a",
+              "name": "id_conversa",
+              "value": "={{ $json.body.messages[0].conversation_id || $json.body.conversation.messages[0].conversation_id }}",
+              "type": "string"
+            },
+            {
+              "id": "8bf522a6-75fb-434a-854c-b736539309e1",
+              "name": "telefone",
+              "value": "={{ $json.body.messages[0].sender.phone_number || $json.body.conversation.messages[0].sender.phone_number }}",
+              "type": "string"
+            },
+            {
+              "id": "d1eb3395-c9ed-4436-898f-c7720b20ab12",
+              "name": "equipa",
+              "value": "={{ $json.body.meta.team.id}}",
+              "type": "string"
+            },
+            {
+              "id": "0d622a33-f313-4758-a764-fa6cbf2b0587",
+              "name": "mensagem",
+              "value": "={{ $json.body.messages[0].content || $json.body.conversation.messages[0].content || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "8f4b9d84-56e0-4f45-9f17-68c53f365f43",
+              "name": "mensagem_de_audio",
+              "value": "={{ ($json.body.messages[0].attachments[0].file_type) === \"audio\" ? true : false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "2b679a3f-788f-4cd2-88d5-4f03af68f224",
+              "name": "timestamp",
+              "value": "={{$now}}",
+              "type": "string"
+            },
+            {
+              "id": "24caf88e-74ce-43ab-8dc4-1fff471b706f",
+              "name": "tipo",
+              "value": "=incoming",
+              "type": "string"
+            },
+            {
+              "id": "573669d2-1e43-4010-8c82-a67459ffe1db",
+              "name": "etiquetas",
+              "value": "={{ $json.body.labels }}",
+              "type": "array"
+            },
+            {
+              "id": "40ff895f-f63f-4e4f-bba3-c7d803c277f1",
+              "name": "url_chatwoot",
+              "value": "https://your-chatwoot.example.com",
+              "type": "string"
+            },
+            {
+              "id": "cf71dea1-d585-4235-8f05-29bc5f82b5df",
+              "name": "telegram_chat_id",
+              "value": "<YOUR_TELEGRAM_CHAT_ID>",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        220
+      ],
+      "name": "Info"
+    }
+  ],
+  "connections": {
+    "Mensagem chegando?": {
+      "main": [
+        [
+          {
+            "node": "Tipo de mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem recebida": {
+      "main": [
+        [
+          {
+            "node": "Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem encavalada?": {
+      "main": [
+        [
+          {
+            "node": "Limpar fila de mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar mensagens": {
+      "main": [
+        [
+          {
+            "node": "Mensagem encavalada?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpar fila de mensagens": {
+      "main": [
+        [
+          {
+            "node": "Marcar como lidas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar": {
+      "main": [
+        [
+          {
+            "node": "Buscar mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tipo de mensagem": {
+      "main": [
+        [
+          {
+            "node": "Enfileirar mensagem.",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download áudio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Secretária",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Secretária": {
+      "main": [
+        [
+          {
+            "node": "Tipo de mensagem1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar áudio": {
+      "main": [
+        [
+          {
+            "node": "Áudio para base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar SSML": {
+      "main": [
+        [
+          {
+            "node": "Gerar áudio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tipo de mensagem1": {
+      "main": [
+        [
+          {
+            "node": "Formatar texto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatar SSML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar texto": {
+      "main": [
+        [
+          {
+            "node": "Resetar status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Secretária",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enfileirar mensagem.": {
+      "main": [
+        [
+          {
+            "node": "Esperar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar como lidas": {
+      "main": [
+        [
+          {
+            "node": "Digitando/Gravando...",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Digitando/Gravando...": {
+      "main": [
+        [
+          {
+            "node": "Set mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set mensagens": {
+      "main": [
+        [
+          {
+            "node": "Secretária",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download áudio": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcrever audio": {
+      "main": [
+        [
+          {
+            "node": "Marcar como lidas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Transcrever audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resetar status": {
+      "main": [
+        [
+          {
+            "node": "Tipo de mensagem2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tipo de mensagem2": {
+      "main": [
+        [
+          {
+            "node": "Enviar texto.",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Base64 para áudio": {
+      "main": [
+        [
+          {
+            "node": "Enviar áudio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Áudio para base64": {
+      "main": [
+        [
+          {
+            "node": "Resetar status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Base64 para áudio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Secretária",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Formatar SSML",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Formatar texto",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descarregar e enviar arquivo": {
+      "ai_tool": [
+        [
+          {
+            "node": "Secretária",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalate_to_human": {
+      "ai_tool": [
+        [
+          {
+            "node": "Secretária",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reflect": {
+      "ai_tool": [
+        [
+          {
+            "node": "Secretária",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "React message": {
+      "ai_tool": [
+        [
+          {
+            "node": "Secretária",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Info": {
+      "main": [
+        [
+          {
+            "node": "Mensagem chegando?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
