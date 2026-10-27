@@ -1,7 +1,12 @@
 # n8n AI Agents
 
-Production-style **AI agent workflows for n8n**: a WhatsApp clinic receptionist that books appointments
-on Google Calendar, plus a reusable **MCP server** that exposes Google Calendar as agent tools.
+Production-style **AI agents built around n8n**:
+
+| Agent | Channel | Folder |
+|---|---|---|
+| **WhatsApp Clinic Receptionist**: books on Google Calendar over MCP, voice notes in and out | WhatsApp (async) | [`workflows/`](workflows) |
+| **Voice Receptionist (pt-PT)**: inbound calls with barge-in, authenticated and idempotent booking tools | Voice / web (real time) | [`voice-receptionist/`](voice-receptionist) |
+| **MCP Server: Google Calendar**: calendar operations as reusable agent tools | MCP | [`workflows/`](workflows) |
 
 > Sanitized demo versions: fictitious clinic, no credentials, no hosts, no IDs. Every value you must
 > configure is marked `<YOUR_...>` or read from environment variables.

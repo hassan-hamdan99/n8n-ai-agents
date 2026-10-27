@@ -1,0 +1,43 @@
+{
+  "_comment": "ElevenLabs server tools (webhook). Each one POSTs JSON to an n8n webhook. The shared token header is checked by n8n, which answers 401 before touching the calendar.",
+  "tools": [
+    {
+      "name": "verificar_disponibilidade",
+      "description": "Verifica os horários livres para uma consulta numa data e especialidade. Usar depois de ter a data e a especialidade. Devolve até três horários.",
+      "method": "POST",
+      "url": "https://your-n8n.example.com/webhook/voice-agent/availability",
+      "request_headers": { "X-Agent-Token": "<SET_IN_ELEVENLABS_SECRETS>" },
+      "body_schema": {
+        "type": "object",
+        "required": ["data", "especialidade"],
+        "properties": {
+          "data": { "type": "string", "description": "Data pretendida, AAAA-MM-DD" },
+          "especialidade": { "type": "string", "description": "Especialidade ou nome do profissional" },
+          "periodo": { "type": "string", "enum": ["manha", "tarde", ""], "description": "Período preferido (opcional)" }
+        }
+      },
+      "response_example": { "disponivel": true, "horarios": ["09:30", "11:00", "16:15"], "profissional": "Dr. Rui Marques" }
+    },
+    {
+      "name": "criar_marcacao",
+      "description": "Cria a marcação no calendário. Usar só depois de o utente confirmar o horário. Se já existir marcação do mesmo utente nesse dia, devolve a existente em vez de criar outra.",
+      "method": "POST",
+      "url": "https://your-n8n.example.com/webhook/voice-agent/book",
+      "request_headers": { "X-Agent-Token": "<SET_IN_ELEVENLABS_SECRETS>" },
+      "body_schema": {
+        "type": "object",
+        "required": ["nome", "telefone", "especialidade", "data_hora_inicio"],
+        "properties": {
+          "nome": { "type": "string" },
+          "data_nascimento": { "type": "string", "description": "AAAA-MM-DD" },
+          "telefone": { "type": "string", "description": "Número completo, ex.: +351912345678" },
+          "especialidade": { "type": "string" },
+          "profissional": { "type": "string" },
+          "data_hora_inicio": { "type": "string", "description": "AAAA-MM-DDThh:mm:ss (hora de Lisboa)" },
+          "notas": { "type": "string" }
+        }
+      },
+      "response_example": { "sucesso": true, "id_marcacao": "abc123", "duplicada": false, "mensagem": "Marcação criada para 2026-09-20 às 11:00 com Dr. Rui Marques." }
+    }
+  ]
+}
