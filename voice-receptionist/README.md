@@ -45,7 +45,7 @@ layer can be swapped (Retell, Vapi) without touching the scheduling rules.
 | [`test-plan.md`](test-plan.md) | Acceptance test script (voice, flow, barge-in, off-script, duplicates) |
 
 ```bash
-node --test voice-receptionist/test
+node --test "voice-receptionist/test/*.test.js"
 ```
 
 ## Path to production
